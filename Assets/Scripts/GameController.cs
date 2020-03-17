@@ -11,9 +11,11 @@ public class GameController : MonoBehaviour
     public GameObject gameOverText;
     public Text scoreText;
     public bool gameOver = false;
-    private int score = 0;
 
-    // Start is called before the first frame update
+    private int score = 0;
+    private ColumnPool columnPool;
+    private ScrollingObject[] scrollingObjects = null;
+
     void Awake()
     {
         if (instance == null)
@@ -25,12 +27,24 @@ public class GameController : MonoBehaviour
         }
     }
 
+    private void Start()
+    {
+        columnPool = GetComponent<ColumnPool>();
+        scrollingObjects = FindObjectsOfType<ScrollingObject>();
+    }
+
     // Update is called once per frame
     void Update()
     {
         if (gameOver && Input.GetMouseButtonDown(0))
         {
-            SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+            //Start over
+            foreach (ScrollingObject scrollingObject in scrollingObjects)
+            {
+                scrollingObject.StartOver();
+            }
+            columnPool.DeleteColumns();
+            gameOver = false;
         }
         
     }
@@ -42,13 +56,13 @@ public class GameController : MonoBehaviour
             return;
         }
 
-        score++;
-        scoreText.text = "Score: " + score.ToString();
+        //score++;
+        //scoreText.text = "Score: " + score.ToString();
     }
 
 
     public void BirdDied() {
-        gameOverText.SetActive(true);
+        //gameOverText.SetActive(true);
         gameOver = true;
     }
 }

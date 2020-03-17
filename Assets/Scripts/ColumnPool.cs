@@ -9,21 +9,22 @@ public class ColumnPool : MonoBehaviour
     public float spawnRate = 4f;
     public float columnMin = -1f;
     public float columnMax = 3.5f;
-
-    private GameObject[] columns;
+    
+    private List<GameObject> columns ;
     private Vector2 objectPoolPosition = new Vector2(-15f, -25f);
-    private float timeSinceLastSpawn = 4f;
+    private float timeSinceLastSpawn;
     private float spawnXPosition = 10f;
     private int currColumn = 0;
 
     // Start is called before the first frame update
     void Start()
     {
-        columns = new GameObject[columnPoolSize];
+        timeSinceLastSpawn = 4f;
+        columns = new List<GameObject>(columnPoolSize);
        
         for (int i = 0; i < columnPoolSize; i++)
         {
-            columns[i] = (GameObject)Instantiate(columnPrefab, objectPoolPosition, Quaternion.identity);
+            columns.Add((GameObject)Instantiate(columnPrefab, objectPoolPosition, Quaternion.identity));                 
         }
     }
 
@@ -41,5 +42,14 @@ public class ColumnPool : MonoBehaviour
             if (currColumn >= columnPoolSize) currColumn = 0;
         }
 
+    }
+
+    public void DeleteColumns() {
+        foreach (GameObject column in columns)
+        {
+            Destroy(column);
+        }
+        columns.Clear();
+        Start();
     }
 }

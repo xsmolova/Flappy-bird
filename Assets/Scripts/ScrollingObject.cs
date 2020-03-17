@@ -5,10 +5,12 @@ using UnityEngine;
 public class ScrollingObject : MonoBehaviour
 {
     private Rigidbody2D rb;
+    private Vector2 startingPosition;
 
     // Start is called before the first frame update
     void Start()
     {
+        startingPosition = new Vector2(transform.position.x, transform.position.y);
         rb = GetComponent<Rigidbody2D>();
         rb.velocity = new Vector2(GameController.instance.scrollSpeed,0);
     }
@@ -20,5 +22,10 @@ public class ScrollingObject : MonoBehaviour
         {
             rb.velocity = Vector2.zero;
         }
+    }
+
+    public void StartOver() {
+        transform.position = startingPosition;
+        rb.velocity = new Vector2(GameController.instance.scrollSpeed, 0);
     }
 }
