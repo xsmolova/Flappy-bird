@@ -43,6 +43,7 @@ public class GameController : MonoBehaviour
             {
                 scrollingObject.StartOver();
             }
+            // refresh score
             columnPool.DeleteColumns();
             gameOver = false;
         }
