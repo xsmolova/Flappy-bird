@@ -33,37 +33,26 @@ public class GameController : MonoBehaviour
         scrollingObjects = FindObjectsOfType<ScrollingObject>();
     }
 
-    // Update is called once per frame
-    void Update()
-    {
-        if (gameOver && Input.GetMouseButtonDown(0))
+
+    public void ResetGame() {
+        //Start over
+        foreach (ScrollingObject scrollingObject in scrollingObjects)
         {
-            //Start over
-            foreach (ScrollingObject scrollingObject in scrollingObjects)
-            {
-                scrollingObject.StartOver();
-            }
-            // refresh score
-            columnPool.DeleteColumns();
-            gameOver = false;
+            scrollingObject.StartOver();
         }
-        
+        // refresh score
+        columnPool.RespawnColumns();
+        gameOver = false;
     }
-
-    public void BirdScored() {
-
-        if (gameOver)
-        {
-            return;
-        }
-
-        //score++;
-        //scoreText.text = "Score: " + score.ToString();
-    }
-
 
     public void BirdDied() {
         //gameOverText.SetActive(true);
         gameOver = true;
     }
+
+    public GameObject GetCurrentColumn() {
+        return columnPool.GetCurrentColumn();
+    }
+
+    //if all birds died -> restart
 }

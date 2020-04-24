@@ -6,9 +6,13 @@ public class Column : MonoBehaviour
 {
     private void OnTriggerEnter2D(Collider2D other)
     {
-        if(other.GetComponent<Bird>()!= null)
+        Brain bird;
+
+        if ((bird = other.GetComponent<Brain>())!= null)
         {
-            GameController.instance.BirdScored();
+            bird.score++;
+            //tag column
+            gameObject.tag = "scored";
         }
     }
 }
