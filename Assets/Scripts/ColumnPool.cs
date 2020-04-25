@@ -7,14 +7,15 @@ public class ColumnPool : MonoBehaviour
     public int columnPoolSize = 5;
     public GameObject columnPrefab;
     public float spawnRate = 4f;
-    public float columnMin = 0.5f;
-    public float columnMax = 3f;
+    public float columnMin = -1.64f;
+    public float columnMax = 1.64f;
 
     private List<GameObject> columns;
     private Vector2 objectPoolPosition = new Vector2(-15f, -25f);
     private float timeSinceLastSpawn;
     private float spawnXPosition = 10f;
     private int currColumn = 0;
+    private bool isFirst = true;
 
     // Start is called before the first frame update
     void Start()
@@ -34,6 +35,9 @@ public class ColumnPool : MonoBehaviour
             columns[currColumn].transform.position = new Vector2(spawnXPosition, spawnYPosition);
 
             currColumn++;
+
+            if(isFirst) isFirst = false;
+
             if (currColumn >= columnPoolSize) currColumn = 0;
         }
 
@@ -41,6 +45,8 @@ public class ColumnPool : MonoBehaviour
 
     private void SpawnColumns()
     {
+        isFirst = true;
+
         timeSinceLastSpawn = 4f;
         columns = new List<GameObject>(columnPoolSize);
 
@@ -62,6 +68,8 @@ public class ColumnPool : MonoBehaviour
 
     public GameObject GetCurrentColumn()
     {
+        if (isFirst) return null;
+
         foreach (GameObject column in columns)
         {
             if (column.tag == "unscored") return column;

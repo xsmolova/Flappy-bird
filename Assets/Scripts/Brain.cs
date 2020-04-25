@@ -17,8 +17,8 @@ public class Replay
     public Replay(double distToTop, double distToBottom, double distVertGap, double distHorGap, double r)
     {
         states = new List<double>();
-       // states.Add(distToTop);
-       // states.Add(distToBottom);
+        // states.Add(distToTop);
+        // states.Add(distToBottom);
         states.Add(distVertGap);
         states.Add(distHorGap);
         reward = r;
@@ -30,6 +30,8 @@ public class Brain : MonoBehaviour
     // Colliders 
     public GameObject top;
     public GameObject bottom;
+
+    public float timeScale = 1.0f;
 
     // Bird
     public float upForce = 250f;
@@ -48,15 +50,16 @@ public class Brain : MonoBehaviour
     int maxMemoryCapacity = 10000;
 
     float discount = 0.99f;
-    float exploreRate = 10.0f;
-    float maxExploreRate = 10.0f;
+    float exploreRate = 2.0f;
+    float maxExploreRate = 100.0f;
     float minExploreRate = 0.01f;
     float exploreDecay = 0.0001f;
 
-    // Timer
+    // Stats
     float timer = 0;
     float maxFlightTime = 0;
-    int failCount;
+    int failCount = 0;
+    int maxScore = 0;
 
     // Start is called before the first frame update
     void Start()
@@ -68,11 +71,11 @@ public class Brain : MonoBehaviour
 
         ann = new ANN(2, 2, 1, 6, 0.2f);
         startPosition = transform.position;
-        Time.timeScale = 5.0f;
+        Time.timeScale = timeScale;
     }
     private void Update()
     {
-        if (Input.GetKeyDown("space")) Flap();
+        if (Input.GetKeyDown("space")) ResetBird();
     }
 
     private void FixedUpdate()
@@ -83,32 +86,43 @@ public class Brain : MonoBehaviour
         List<double> qs = new List<double>();
 
         GameObject currColumn = GameController.instance.GetCurrentColumn();
+        if (!currColumn) return;
 
-       // states.Add(top.transform.position.y - transform.position.y);
-       // states.Add(transform.position.y - bottom.transform.position.y);
-        states.Add(currColumn.transform.position.y - transform.position.y);
-        states.Add(currColumn.transform.position.x - transform.position.x);
+        // states.Add(top.transform.position.y - transform.position.y);
+        // states.Add(transform.position.y - bottom.transform.position.y);
+
+        //Normalize
+        float yDist = currColumn.transform.position.y - transform.position.y;
+        float xDist = currColumn.transform.position.x - transform.position.x;
+
+        states.Add(yDist);
+        states.Add(xDist);
+
+        Debug.Log("Y distance: " + yDist);
+        Debug.Log("X distance: " + xDist);
 
         qs = SoftMax(ann.CalcOutput(states));
         double maxQ = qs.Max();
         int maxQIndex = qs.ToList().IndexOf(maxQ);
+        
+        Debug.Log("output 0: " + qs[0]);
+        Debug.Log("output 1: " + qs[1]);
 
         // Explore
-         exploreRate = Mathf.Clamp(exploreRate - exploreDecay, minExploreRate, maxExploreRate);
-         if(Random.Range(0,100) < exploreRate)
-        	maxQIndex = Random.Range(0,2);
+        //exploreRate = Mathf.Clamp(exploreRate - exploreDecay, minExploreRate, maxExploreRate);
+        //if (Random.Range(0, 100) < exploreRate)
+        //    maxQIndex = Random.Range(0, 2);
 
         if (maxQIndex == 0) Flap();
 
-        if (isDead) reward = -10.0f;
-        else if (currColumn.tag == "scored") reward = 0.5f;
+        if (isDead) reward = -100.0f;
         else reward = 0.1f;
 
-        Replay lastMemory = new Replay(top.transform.position.y - transform.position.y,
-                                       transform.position.y - bottom.transform.position.y,
-                                       currColumn.transform.position.y - transform.position.y,
-                                       currColumn.transform.position.x - transform.position.x,
-                                       reward);
+        if (currColumn.tag == "scored") reward += 0.1f;
+
+
+        Replay lastMemory = new Replay(0,0,yDist, xDist, reward);
+
         if (replayMemory.Count > maxMemoryCapacity)
             replayMemory.RemoveAt(0);
 
@@ -118,19 +132,19 @@ public class Brain : MonoBehaviour
         {
             for (int i = replayMemory.Count - 1; i >= 0; i--)
             {
-                List<double> outputsOld = new List<double>();
-                List<double> outputsNew = new List<double>();
+                List<double> outputsOld;
+                List<double> outputsNew;
                 outputsOld = SoftMax(ann.CalcOutput(replayMemory[i].states));
 
                 double maxQOld = outputsOld.Max();
                 int action = outputsOld.ToList().IndexOf(maxQOld);
 
                 double feedback;
-                if (i == replayMemory.Count - 1)
+                if (i == replayMemory.Count - 1 || replayMemory[i].reward == -1)
                     feedback = replayMemory[i].reward;
                 else
                 {
-                    outputsNew = SoftMax(ann.CalcOutput(replayMemory[i+1].states));
+                    outputsNew = SoftMax(ann.CalcOutput(replayMemory[i + 1].states));
                     maxQ = outputsNew.Max();
                     //Bellmans equation
                     feedback = replayMemory[i].reward + discount * maxQ;
@@ -141,17 +155,17 @@ public class Brain : MonoBehaviour
             }
 
             if (timer > maxFlightTime)
-            {
                 maxFlightTime = timer;
-            }
+
+            if (score > maxScore)
+                maxScore = score;
 
             timer = 0;
 
-            isDead = false;
             ResetBird();
             replayMemory.Clear();
             failCount++;
-            Debug.Log("fail count " + failCount);
+
         }
 
 
@@ -167,12 +181,13 @@ public class Brain : MonoBehaviour
     }
     void ResetBird()
     {
+        isDead = false;
+        score = 0;
         rb.velocity = Vector2.zero;
         transform.rotation = Quaternion.identity;
         transform.position = startPosition;
-       
-        isDead = false;
-       // anim.SetBool("Die", isDead);
+
+        // anim.SetBool("Die", isDead);
         GameController.instance.ResetGame();
     }
 
@@ -193,12 +208,41 @@ public class Brain : MonoBehaviour
         return result;
     }
 
+    float Map(float newfrom, float newto, float origfrom, float origto, float value)
+    {
+        if (value <= origfrom)
+            return newfrom;
+        else if (value >= origto)
+            return newto;
+        return (newto - newfrom) * ((value - origfrom) / (origto - origfrom)) + newfrom;
+    }
+
+    float Round(float x)
+    {
+        return (float)System.Math.Round(x, System.MidpointRounding.AwayFromZero) / 2.0f;
+    }
+
     private void OnCollisionEnter2D(Collision2D collision)
     {
         rb.velocity = Vector2.zero;
         isDead = true;
-      //  anim.SetBool("Die", isDead);
+        //  anim.SetBool("Die", isDead);
         GameController.instance.BirdDied();
+    }
+
+    GUIStyle gUIStyle = new GUIStyle();
+    private void OnGUI()
+    {
+        gUIStyle.fontSize = 25;
+        gUIStyle.normal.textColor = Color.white;
+        GUI.BeginGroup(new Rect(10, 10, 600, 150));
+        GUI.Box(new Rect(0, 0, 140, 140), "Stats", gUIStyle);
+        GUI.Label(new Rect(10, 25, 500, 30), "Fails: " + failCount, gUIStyle);
+        GUI.Label(new Rect(10, 50, 500, 30), "Decay Rate: " + exploreRate, gUIStyle);
+        GUI.Label(new Rect(10, 75, 500, 30), "Last Best Time: " + maxFlightTime, gUIStyle);
+        GUI.Label(new Rect(10, 100, 500, 30), "Last Best Score: " + maxScore, gUIStyle);
+        GUI.Label(new Rect(10, 125, 500, 30), "This Flyght: " + timer, gUIStyle);
+        GUI.EndGroup();
     }
 
 }
