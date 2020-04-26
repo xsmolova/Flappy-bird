@@ -35,14 +35,13 @@ public class GameController : MonoBehaviour
 
 
     public void ResetGame() {
+        gameOver = false;
+        columnPool.RespawnColumns();
         //Start over
         foreach (ScrollingObject scrollingObject in scrollingObjects)
         {
             scrollingObject.StartOver();
         }
-        // refresh score
-        columnPool.RespawnColumns();
-        gameOver = false;
     }
 
     public void BirdDied() {

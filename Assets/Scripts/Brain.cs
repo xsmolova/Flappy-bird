@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using System.Linq;
 
+
 // States:
 // distance to top collider
 // distance to bottom collider
@@ -37,6 +38,7 @@ public class Brain : MonoBehaviour
     public float upForce = 250f;
     public int score = 0;
     public bool isDead = false;
+    public bool isExploring = true;
 
     private Rigidbody2D rb;
     private Animator anim;
@@ -50,7 +52,7 @@ public class Brain : MonoBehaviour
     int maxMemoryCapacity = 10000;
 
     float discount = 0.99f;
-    float exploreRate = 2.0f;
+   public float exploreRate = 100.0f;
     float maxExploreRate = 100.0f;
     float minExploreRate = 0.01f;
     float exploreDecay = 0.0001f;
@@ -69,13 +71,14 @@ public class Brain : MonoBehaviour
         anim = GetComponent<Animator>();
         score = 0;
 
-        ann = new ANN(2, 2, 1, 6, 0.2f);
+        ann = new ANN(2, 2, 1, 6, 0.5f);
         startPosition = transform.position;
         Time.timeScale = timeScale;
     }
     private void Update()
     {
-        if (Input.GetKeyDown("space")) ResetBird();
+        if (Input.GetKeyDown(KeyCode.F)) Flap();
+        if(Input.GetKeyDown(KeyCode.T)) Time.timeScale = timeScale; 
     }
 
     private void FixedUpdate()
@@ -87,6 +90,7 @@ public class Brain : MonoBehaviour
 
         GameObject currColumn = GameController.instance.GetCurrentColumn();
         if (!currColumn) return;
+        Debug.Log("current column " + currColumn );
 
         // states.Add(top.transform.position.y - transform.position.y);
         // states.Add(transform.position.y - bottom.transform.position.y);
@@ -95,33 +99,39 @@ public class Brain : MonoBehaviour
         float yDist = currColumn.transform.position.y - transform.position.y;
         float xDist = currColumn.transform.position.x - transform.position.x;
 
+        yDist = 1 - (float)System.Math.Round((Map(-1, 1, -3.4f, 3.4f, yDist)),2);
+        xDist = 1 - (float)System.Math.Round((Map(0, 1,0,10,xDist)),2);
+        
         states.Add(yDist);
         states.Add(xDist);
 
-        Debug.Log("Y distance: " + yDist);
-        Debug.Log("X distance: " + xDist);
+        //Debug.Log("Y distance: " + yDist);
+        //Debug.Log("X distance: " + xDist);
 
         qs = SoftMax(ann.CalcOutput(states));
         double maxQ = qs.Max();
         int maxQIndex = qs.ToList().IndexOf(maxQ);
         
-        Debug.Log("output 0: " + qs[0]);
-        Debug.Log("output 1: " + qs[1]);
+        //Debug.Log("output 0: " + qs[0]);
+        //Debug.Log("output 1: " + qs[1]);
 
         // Explore
-        //exploreRate = Mathf.Clamp(exploreRate - exploreDecay, minExploreRate, maxExploreRate);
-        //if (Random.Range(0, 100) < exploreRate)
-        //    maxQIndex = Random.Range(0, 2);
+        if (isExploring)
+        {
+           // exploreRate = Mathf.Clamp(exploreRate - exploreDecay, minExploreRate, maxExploreRate);
+            if (Random.Range(0, 100) < exploreRate)
+                maxQIndex = Random.Range(0, 2);
+        }
 
         if (maxQIndex == 0) Flap();
 
-        if (isDead) reward = -100.0f;
+        if (isDead) reward = -1.0f;
         else reward = 0.1f;
 
-        if (currColumn.tag == "scored") reward += 0.1f;
+        if (currColumn.tag == "scored") reward = 1.0f;
 
 
-        Replay lastMemory = new Replay(0,0,yDist, xDist, reward);
+        Replay lastMemory = new Replay(0,0, yDist, xDist, reward);
 
         if (replayMemory.Count > maxMemoryCapacity)
             replayMemory.RemoveAt(0);
@@ -170,7 +180,7 @@ public class Brain : MonoBehaviour
 
 
     }
-
+ 
 
     //if not dead flap
     private void Flap()

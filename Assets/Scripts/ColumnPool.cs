@@ -33,7 +33,7 @@ public class ColumnPool : MonoBehaviour
             timeSinceLastSpawn = 0;
             float spawnYPosition = Random.Range(columnMin, columnMax);
             columns[currColumn].transform.position = new Vector2(spawnXPosition, spawnYPosition);
-
+            columns[currColumn].tag = "unscored";
             currColumn++;
 
             if(isFirst) isFirst = false;
@@ -46,8 +46,9 @@ public class ColumnPool : MonoBehaviour
     private void SpawnColumns()
     {
         isFirst = true;
-
+        currColumn = 0;
         timeSinceLastSpawn = 4f;
+
         columns = new List<GameObject>(columnPoolSize);
 
         for (int i = 0; i < columnPoolSize; i++)
