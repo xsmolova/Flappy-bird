@@ -6,15 +6,16 @@ public class ColumnPool : MonoBehaviour
 {
     public int columnPoolSize = 5;
     public GameObject columnPrefab;
-    public float spawnRate = 4f;
+    public float spawnRate = 3f;
     public float columnMin = -1.64f;
     public float columnMax = 1.64f;
+    public int currentColumnIndex = 0;
 
     private List<GameObject> columns;
     private Vector2 objectPoolPosition = new Vector2(-15f, -25f);
     private float timeSinceLastSpawn;
     private float spawnXPosition = 10f;
-    private int currColumn = 0;
+    private int posColumnIndex = 0;
     private bool isFirst = true;
 
     // Start is called before the first frame update
@@ -24,7 +25,7 @@ public class ColumnPool : MonoBehaviour
     }
 
     // Update is called once per frame
-    void Update()
+    void FixedUpdate()
     {
         timeSinceLastSpawn += Time.deltaTime;
 
@@ -32,13 +33,26 @@ public class ColumnPool : MonoBehaviour
         {
             timeSinceLastSpawn = 0;
             float spawnYPosition = Random.Range(columnMin, columnMax);
-            columns[currColumn].transform.position = new Vector2(spawnXPosition, spawnYPosition);
-            columns[currColumn].tag = "unscored";
-            currColumn++;
+            columns[posColumnIndex].transform.position = new Vector2(spawnXPosition, spawnYPosition);
+            columns[posColumnIndex].tag = "unscored";
+            columns[posColumnIndex].GetComponentInChildren<SpriteRenderer>().color = Color.white;
+            posColumnIndex++;
 
-            if(isFirst) isFirst = false;
 
-            if (currColumn >= columnPoolSize) currColumn = 0;
+            if (isFirst) { 
+                isFirst = false;
+
+                timeSinceLastSpawn = -spawnRate;
+
+                float predictedPointX = spawnXPosition + (-GameController.instance.scrollSpeed) * spawnRate;
+                float spawnY = Random.Range(columnMin, columnMax);
+
+                columns[posColumnIndex].transform.position = new Vector2(predictedPointX, spawnY);
+                columns[posColumnIndex].tag = "unscored";
+                posColumnIndex++;
+            }
+
+            if (posColumnIndex >= columnPoolSize) posColumnIndex = 0;
         }
 
     }
@@ -46,7 +60,8 @@ public class ColumnPool : MonoBehaviour
     private void SpawnColumns()
     {
         isFirst = true;
-        currColumn = 0;
+        posColumnIndex = 0;
+        currentColumnIndex = 0;
         timeSinceLastSpawn = 4f;
 
         columns = new List<GameObject>(columnPoolSize);
@@ -69,12 +84,13 @@ public class ColumnPool : MonoBehaviour
 
     public GameObject GetCurrentColumn()
     {
-        if (isFirst) return null;
+        if (columns[currentColumnIndex].transform.position.y == objectPoolPosition.y) return null;
+        return columns[currentColumnIndex];
+    }
 
-        foreach (GameObject column in columns)
-        {
-            if (column.tag == "unscored") return column;
-        }
-        return null;
+    public GameObject GetNextColumn()
+    {
+        if(currentColumnIndex + 1 == columnPoolSize) return columns[0];
+        else return columns[currentColumnIndex + 1];
     }
 }

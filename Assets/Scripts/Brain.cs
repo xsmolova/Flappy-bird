@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 using System.Linq;
 
 
@@ -15,13 +16,13 @@ public class Replay
     public List<double> states;
     public double reward;
 
-    public Replay(double distToTop, double distToBottom, double distVertGap, double distHorGap, double r)
+    public Replay(double distVertGap, double distHorGap, double yDistToNext, double r)
     {
         states = new List<double>();
-        // states.Add(distToTop);
-        // states.Add(distToBottom);
+
         states.Add(distVertGap);
         states.Add(distHorGap);
+      //  states.Add(yDistToNext);
         reward = r;
     }
 }
@@ -31,6 +32,7 @@ public class Brain : MonoBehaviour
     // Colliders 
     public GameObject top;
     public GameObject bottom;
+    public Text scoreText;
 
     public float timeScale = 1.0f;
 
@@ -43,6 +45,9 @@ public class Brain : MonoBehaviour
     private Rigidbody2D rb;
     private Animator anim;
     private Vector2 startPosition;
+    private float halfScreen = 3.4f;
+    private float maxDistanceToColumn = 10f;
+    private int lastScore = 0;
 
     // ANN Brain
     private ANN ann;
@@ -52,7 +57,7 @@ public class Brain : MonoBehaviour
     int maxMemoryCapacity = 10000;
 
     float discount = 0.99f;
-   public float exploreRate = 100.0f;
+    public float exploreRate = 100.0f;
     float maxExploreRate = 100.0f;
     float minExploreRate = 0.01f;
     float exploreDecay = 0.0001f;
@@ -71,14 +76,15 @@ public class Brain : MonoBehaviour
         anim = GetComponent<Animator>();
         score = 0;
 
-        ann = new ANN(2, 2, 1, 6, 0.5f);
+        ann = new ANN(2, 2, 1, 6, 0.9f);
         startPosition = transform.position;
         Time.timeScale = timeScale;
     }
     private void Update()
     {
         if (Input.GetKeyDown(KeyCode.F)) Flap();
-        if(Input.GetKeyDown(KeyCode.T)) Time.timeScale = timeScale; 
+        if (Input.GetKeyDown(KeyCode.T)) Time.timeScale = timeScale;
+
     }
 
     private void FixedUpdate()
@@ -86,52 +92,61 @@ public class Brain : MonoBehaviour
         timer += Time.deltaTime;
 
         List<double> states = new List<double>();
-        List<double> qs = new List<double>();
+        List<double> qs;
 
         GameObject currColumn = GameController.instance.GetCurrentColumn();
+        GameObject nextColumn = GameController.instance.GetNextColumn();
         if (!currColumn) return;
-        Debug.Log("current column " + currColumn );
 
-        // states.Add(top.transform.position.y - transform.position.y);
-        // states.Add(transform.position.y - bottom.transform.position.y);
+        currColumn.GetComponentInChildren<SpriteRenderer>().color = Color.green;
+        nextColumn.GetComponentInChildren<SpriteRenderer>().color = Color.red;
 
-        //Normalize
         float yDist = currColumn.transform.position.y - transform.position.y;
         float xDist = currColumn.transform.position.x - transform.position.x;
+        float yDistToNext = nextColumn.transform.position.y - currColumn.transform.position.y;
 
-        yDist = 1 - (float)System.Math.Round((Map(-1, 1, -3.4f, 3.4f, yDist)),2);
-        xDist = 1 - (float)System.Math.Round((Map(0, 1,0,10,xDist)),2);
-        
-        states.Add(yDist);
-        states.Add(xDist);
+        Debug.Log("Y distance: " + yDist);
+        Debug.Log("X distance: " + xDist);
+        Debug.Log("Y difference: " + yDistToNext);
 
-        //Debug.Log("Y distance: " + yDist);
-        //Debug.Log("X distance: " + xDist);
+        //Normalize
+        float vertDist = 1 - (float)System.Math.Round((Map(-1.0f, 1.0f, -halfScreen, halfScreen, yDist)), 2);
+        float horDist = 1 - (float)System.Math.Round((Map(0.0f, 1.0f, 0.0f, maxDistanceToColumn, xDist)), 2);
+        float vertDistToNext = 1 - (float)System.Math.Round((Map(-1.0f, 1.0f, -halfScreen, halfScreen, yDistToNext)), 2);
+
+        states.Add(vertDist);
+        states.Add(horDist);
+      //  states.Add(vertDistToNext);
 
         qs = SoftMax(ann.CalcOutput(states));
         double maxQ = qs.Max();
         int maxQIndex = qs.ToList().IndexOf(maxQ);
-        
+
         //Debug.Log("output 0: " + qs[0]);
         //Debug.Log("output 1: " + qs[1]);
 
         // Explore
         if (isExploring)
         {
-           // exploreRate = Mathf.Clamp(exploreRate - exploreDecay, minExploreRate, maxExploreRate);
+            exploreRate = Mathf.Clamp(exploreRate - exploreDecay, minExploreRate, maxExploreRate);
             if (Random.Range(0, 100) < exploreRate)
                 maxQIndex = Random.Range(0, 2);
         }
 
         if (maxQIndex == 0) Flap();
 
-        if (isDead) reward = -1.0f;
+        if (isDead) reward = -1f;
         else reward = 0.1f;
 
-        if (currColumn.tag == "scored") reward = 1.0f;
+        if (lastScore < score)
+        {
+            //reward += 0.01f;
+            scoreText.text = "Score: " + score;
+            lastScore = score;
+        }
 
 
-        Replay lastMemory = new Replay(0,0, yDist, xDist, reward);
+        Replay lastMemory = new Replay(vertDist, horDist, vertDistToNext, reward);
 
         if (replayMemory.Count > maxMemoryCapacity)
             replayMemory.RemoveAt(0);
@@ -171,7 +186,6 @@ public class Brain : MonoBehaviour
                 maxScore = score;
 
             timer = 0;
-
             ResetBird();
             replayMemory.Clear();
             failCount++;
@@ -180,7 +194,7 @@ public class Brain : MonoBehaviour
 
 
     }
- 
+
 
     //if not dead flap
     private void Flap()
@@ -191,14 +205,23 @@ public class Brain : MonoBehaviour
     }
     void ResetBird()
     {
+        // anim.SetBool("Die", isDead);
         isDead = false;
         score = 0;
+        scoreText.text = "Score: " + score;
+        lastScore = 0;
         rb.velocity = Vector2.zero;
         transform.rotation = Quaternion.identity;
         transform.position = startPosition;
-
-        // anim.SetBool("Die", isDead);
         GameController.instance.ResetGame();
+    }
+
+    public void OnCollisionEnter2D(Collision2D collision)
+    {
+        rb.velocity = Vector2.zero;
+        isDead = true;
+        //  anim.SetBool("Die", isDead);
+        GameController.instance.BirdDied();
     }
 
 
@@ -232,13 +255,6 @@ public class Brain : MonoBehaviour
         return (float)System.Math.Round(x, System.MidpointRounding.AwayFromZero) / 2.0f;
     }
 
-    private void OnCollisionEnter2D(Collision2D collision)
-    {
-        rb.velocity = Vector2.zero;
-        isDead = true;
-        //  anim.SetBool("Die", isDead);
-        GameController.instance.BirdDied();
-    }
 
     GUIStyle gUIStyle = new GUIStyle();
     private void OnGUI()

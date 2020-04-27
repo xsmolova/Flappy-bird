@@ -472,12 +472,13 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   top: {fileID: 1455615925}
   bottom: {fileID: 1766487969}
-  timeScale: 3
+  scoreText: {fileID: 317586620}
+  timeScale: 4
   upForce: 250
   score: 0
   isDead: 0
-  isExploring: 1
-  exploreRate: 5
+  isExploring: 0
+  exploreRate: 0.01
 --- !u!1 &885564608
 GameObject:
   m_ObjectHideFlags: 0
@@ -1484,9 +1485,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 17bd97736e29d244e9db376a3b7bb702, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  scrollSpeed: -1.5
+  scrollSpeed: -1.4
   gameOverText: {fileID: 1511800816}
-  scoreText: {fileID: 317586620}
   gameOver: 0
 --- !u!4 &2043337705
 Transform:
@@ -1514,9 +1514,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1b3c79c8d1d45c94d938e191da80b388, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  columnPoolSize: 5
+  columnPoolSize: 6
   columnPrefab: {fileID: 2550724195672993867, guid: 9713a8c7f96dfbf48a561517323e1c7d,
     type: 3}
-  spawnRate: 4
+  spawnRate: 3.5
   columnMin: -1.64
   columnMax: 1.64
+  currentColumnIndex: 0

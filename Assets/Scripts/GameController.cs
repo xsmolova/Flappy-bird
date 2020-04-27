@@ -9,7 +9,6 @@ public class GameController : MonoBehaviour
     public static GameController instance;
     public float scrollSpeed = -1.5f;
     public GameObject gameOverText;
-    public Text scoreText;
     public bool gameOver = false;
 
     private int score = 0;
@@ -22,7 +21,8 @@ public class GameController : MonoBehaviour
         {
             instance = this;
         }
-        else if (instance != this) {
+        else if (instance != this)
+        {
             Destroy(gameObject);
         }
     }
@@ -34,7 +34,8 @@ public class GameController : MonoBehaviour
     }
 
 
-    public void ResetGame() {
+    public void ResetGame()
+    {
         gameOver = false;
         columnPool.RespawnColumns();
         //Start over
@@ -44,14 +45,22 @@ public class GameController : MonoBehaviour
         }
     }
 
-    public void BirdDied() {
+    public void BirdDied()
+    {
         //gameOverText.SetActive(true);
         gameOver = true;
     }
 
-    public GameObject GetCurrentColumn() {
+    public GameObject GetCurrentColumn()
+    {
         return columnPool.GetCurrentColumn();
     }
+
+    public GameObject GetNextColumn()
+    {
+        return columnPool.GetNextColumn();
+    }
+
 
     //if all birds died -> restart
 }
