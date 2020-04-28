@@ -14,7 +14,7 @@ GameObject:
   - component: {fileID: 1025451251404761592}
   - component: {fileID: 1025451251404761591}
   - component: {fileID: 2551367444454412440}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: Bird
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -47,14 +47,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bb04e15875c69514dbe906af243f2464, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  top: {fileID: 0}
-  bottom: {fileID: 0}
-  scoreText: {fileID: 0}
-  timeScale: 1
   upForce: 250
   score: 0
   isDead: 0
   isExploring: 0
+  timeAlive: 0
   exploreRate: 0.01
 --- !u!212 &1025451251404761595
 SpriteRenderer:

@@ -34,9 +34,8 @@ public class GameController : MonoBehaviour
 
     public void ResetGame()
     {
-        gameOver = false;
         columnPool.RespawnColumns();
-        
+        gameOver = false;
         //Start over
         foreach (ScrollingObject scrollingObject in scrollingObjects)
         {
@@ -44,7 +43,7 @@ public class GameController : MonoBehaviour
         }
     }
 
-    public void BirdDied()
+    public void AllBirdsDied()
     {
         gameOver = true;
     }

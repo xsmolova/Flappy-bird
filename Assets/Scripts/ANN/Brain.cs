@@ -28,30 +28,27 @@ public class Replay
 
 public class Brain : MonoBehaviour
 {
-    // Game 
-    public Text scoreText;
-    public float timeScale = 1.0f;
-
     // Bird
     public float upForce = 250f;
     public int score = 0;
     public bool isDead = false;
-    public bool isExploring = true;
+    public bool isExploring = false;
+    public float timeAlive = 0;
 
     private Rigidbody2D rb;
     private Animator anim;
     private Vector2 startPosition;
-    private int lastScore = 0;
+    public bool deadInPopulation = false;
 
     private float halfScreen = 3.4f;
     private float maxDistanceToColumn = 10f;
 
     // ANN Brain
-    private ANN ann;
+    public ANN ann = null;
 
     float reward = 0.0f;
     List<Replay> replayMemory = new List<Replay>();
-    int maxMemoryCapacity = 10000;
+    int maxMemoryCapacity = 1000;
 
     float discount = 0.99f;
     public float exploreRate = 100.0f;
@@ -60,33 +57,33 @@ public class Brain : MonoBehaviour
     float exploreDecay = 0.0001f;
 
     // Stats
-    float timer = 0;
-    float maxFlightTime = 0;
-    int failCount = 0;
-    int maxScore = 0;
+    public static int maxScore = 0;
+    public static float maxFlightTime = 0;
 
-    // Start is called before the first frame update
-    void Start()
+    public void Init()
     {
-        failCount = 0;
+        score = 0;
+        timeAlive = 0;
+        isDead = false;
+        deadInPopulation = false;
+        reward = 0.0f;
+
         rb = GetComponent<Rigidbody2D>();
         anim = GetComponent<Animator>();
-        score = 0;
+
+        rb.velocity = Vector2.zero;
 
         ann = new ANN(2, 2, 1, 6, 0.9f);
-        startPosition = transform.position;
-        Time.timeScale = timeScale;
-    }
-    private void Update()
-    {
-        if (Input.GetKeyDown(KeyCode.F)) Flap();
-        if (Input.GetKeyDown(KeyCode.T)) Time.timeScale = timeScale;
-
     }
 
     private void FixedUpdate()
     {
-        timer += Time.deltaTime;
+        // If brain wasnt inicialized
+        if (ann == null) return;
+
+        if (deadInPopulation) return;
+        
+        timeAlive += Time.deltaTime;
 
         List<double> states = new List<double>();
         List<double> qs;
@@ -94,25 +91,22 @@ public class Brain : MonoBehaviour
         GameObject currColumn = GameController.instance.GetCurrentColumn();
         if (!currColumn) return;
 
+        // Get vertical and horizontal distance to the current column
         float yDist = currColumn.transform.position.y - transform.position.y;
         float xDist = currColumn.transform.position.x - transform.position.x;
 
-        Debug.Log("Y distance: " + yDist);
-        Debug.Log("X distance: " + xDist);
-
-        //Normalize and round
+        // Normalize and round
         float vertDist = 1 - (float)System.Math.Round((Map(-1.0f, 1.0f, -halfScreen, halfScreen, yDist)), 2);
         float horDist = 1 - (float)System.Math.Round((Map(0.0f, 1.0f, 0.0f, maxDistanceToColumn, xDist)), 2);
 
+        // Add values to the states
         states.Add(vertDist);
         states.Add(horDist);
 
+        // Calc output for states
         qs = SoftMax(ann.CalcOutput(states));
         double maxQ = qs.Max();
         int maxQIndex = qs.ToList().IndexOf(maxQ);
-
-        //Debug.Log("output 0: " + qs[0]);
-        //Debug.Log("output 1: " + qs[1]);
 
         // Explore
         if (isExploring)
@@ -127,13 +121,7 @@ public class Brain : MonoBehaviour
         if (isDead) reward = -1f;
         else reward = 0.1f;
 
-        if (lastScore < score)
-        {
-            scoreText.text = "Score: " + score;
-            lastScore = score;
-        }
-
-
+        // Add a new memory
         Replay lastMemory = new Replay(vertDist, horDist, reward);
 
         if (replayMemory.Count > maxMemoryCapacity)
@@ -143,44 +131,53 @@ public class Brain : MonoBehaviour
 
         if (isDead)
         {
-            for (int i = replayMemory.Count - 1; i >= 0; i--)
-            {
-                List<double> outputsOld;
-                List<double> outputsNew;
-                outputsOld = SoftMax(ann.CalcOutput(replayMemory[i].states));
+            TrainFromMemories();
 
-                double maxQOld = outputsOld.Max();
-                int action = outputsOld.ToList().IndexOf(maxQOld);
-
-                double feedback;
-                if (i == replayMemory.Count - 1 || replayMemory[i].reward == -1)
-                    feedback = replayMemory[i].reward;
-                else
-                {
-                    outputsNew = SoftMax(ann.CalcOutput(replayMemory[i + 1].states));
-                    maxQ = outputsNew.Max();
-                    //Bellmans equation
-                    feedback = replayMemory[i].reward + discount * maxQ;
-                }
-
-                outputsOld[action] = feedback;
-                ann.Train(replayMemory[i].states, outputsOld);
-            }
-
-            if (timer > maxFlightTime)
-                maxFlightTime = timer;
+            if (timeAlive > maxFlightTime)
+                maxFlightTime = timeAlive;
 
             if (score > maxScore)
                 maxScore = score;
 
-            timer = 0;
-            ResetBird();
             replayMemory.Clear();
-            failCount++;
 
+            // After training with memories
+            if (!deadInPopulation)
+            {
+                deadInPopulation = true;
+                PopulationManager.instance.BirdDied();
+            }
         }
 
 
+    }
+
+    private void TrainFromMemories()
+    {
+        for (int i = replayMemory.Count - 1; i >= 0; i--)
+        {
+            List<double> outputsOld;
+            List<double> outputsNew;
+
+            outputsOld = SoftMax(ann.CalcOutput(replayMemory[i].states));
+
+            double maxQOld = outputsOld.Max();
+            int action = outputsOld.ToList().IndexOf(maxQOld);
+
+            double feedback;
+            if (i == replayMemory.Count - 1 || replayMemory[i].reward == -1)
+                feedback = replayMemory[i].reward;
+            else
+            {
+                outputsNew = SoftMax(ann.CalcOutput(replayMemory[i + 1].states));
+                double maxQ = outputsNew.Max();
+                //Bellmans equation
+                feedback = replayMemory[i].reward + discount * maxQ;
+            }
+
+            outputsOld[action] = feedback;
+            ann.Train(replayMemory[i].states, outputsOld);
+        }
     }
 
     private void Flap()
@@ -189,25 +186,12 @@ public class Brain : MonoBehaviour
         rb.velocity = Vector2.zero;
         rb.AddForce(new Vector2(0, upForce));
     }
-    void ResetBird()
-    {
-        // anim.SetBool("Die", isDead);
-        isDead = false;
-        score = 0;
-        scoreText.text = "Score: " + score;
-        lastScore = 0;
-        rb.velocity = Vector2.zero;
-        transform.rotation = Quaternion.identity;
-        transform.position = startPosition;
-        GameController.instance.ResetGame();
-    }
 
     public void OnCollisionEnter2D(Collision2D collision)
     {
-        rb.velocity = Vector2.zero;
         isDead = true;
-        //  anim.SetBool("Die", isDead);
-        GameController.instance.BirdDied();
+        anim.SetBool("Die", isDead);
+        rb.velocity = Vector2.zero;
     }
 
 
@@ -235,22 +219,6 @@ public class Brain : MonoBehaviour
         else if (value >= origto)
             return newto;
         return (newto - newfrom) * ((value - origfrom) / (origto - origfrom)) + newfrom;
-    }
-
-    // STATS
-    GUIStyle gUIStyle = new GUIStyle();
-    private void OnGUI()
-    {
-        gUIStyle.fontSize = 25;
-        gUIStyle.normal.textColor = Color.white;
-        GUI.BeginGroup(new Rect(10, 10, 600, 150));
-        GUI.Box(new Rect(0, 0, 140, 140), "Stats", gUIStyle);
-        GUI.Label(new Rect(10, 25, 500, 30), "Fails: " + failCount, gUIStyle);
-        GUI.Label(new Rect(10, 50, 500, 30), "Decay Rate: " + exploreRate, gUIStyle);
-        GUI.Label(new Rect(10, 75, 500, 30), "Last Best Time: " + maxFlightTime, gUIStyle);
-        GUI.Label(new Rect(10, 100, 500, 30), "Last Best Score: " + maxScore, gUIStyle);
-        GUI.Label(new Rect(10, 125, 500, 30), "This Flyght: " + timer, gUIStyle);
-        GUI.EndGroup();
     }
 
 }
