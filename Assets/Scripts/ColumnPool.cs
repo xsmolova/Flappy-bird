@@ -35,21 +35,20 @@ public class ColumnPool : MonoBehaviour
             float spawnYPosition = Random.Range(columnMin, columnMax);
             columns[posColumnIndex].transform.position = new Vector2(spawnXPosition, spawnYPosition);
             columns[posColumnIndex].tag = "unscored";
-            columns[posColumnIndex].GetComponentInChildren<SpriteRenderer>().color = Color.white;
             posColumnIndex++;
 
-
+            // get first two
             if (isFirst) { 
                 isFirst = false;
 
-                timeSinceLastSpawn = -spawnRate;
-
-                float predictedPointX = spawnXPosition + (-GameController.instance.scrollSpeed) * spawnRate;
-                float spawnY = Random.Range(columnMin, columnMax);
-
-                columns[posColumnIndex].transform.position = new Vector2(predictedPointX, spawnY);
-                columns[posColumnIndex].tag = "unscored";
-                posColumnIndex++;
+             //   timeSinceLastSpawn = -spawnRate;
+             // 
+             //   float predictedPointX = spawnXPosition + (-GameController.instance.scrollSpeed) * spawnRate;
+             //   float spawnY = Random.Range(columnMin, columnMax);
+             // 
+             //   columns[posColumnIndex].transform.position = new Vector2(predictedPointX, spawnY);
+             //   columns[posColumnIndex].tag = "unscored";
+             //   posColumnIndex++;
             }
 
             if (posColumnIndex >= columnPoolSize) posColumnIndex = 0;
@@ -62,7 +61,7 @@ public class ColumnPool : MonoBehaviour
         isFirst = true;
         posColumnIndex = 0;
         currentColumnIndex = 0;
-        timeSinceLastSpawn = 4f;
+        timeSinceLastSpawn = spawnRate;
 
         columns = new List<GameObject>(columnPoolSize);
 
@@ -88,9 +87,9 @@ public class ColumnPool : MonoBehaviour
         return columns[currentColumnIndex];
     }
 
-    public GameObject GetNextColumn()
-    {
-        if(currentColumnIndex + 1 == columnPoolSize) return columns[0];
-        else return columns[currentColumnIndex + 1];
-    }
+   // public GameObject GetNextColumn()
+   // {
+   //     if(currentColumnIndex + 1 == columnPoolSize) return columns[0];
+   //     else return columns[currentColumnIndex + 1];
+   // }
 }

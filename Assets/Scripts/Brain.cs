@@ -16,24 +16,20 @@ public class Replay
     public List<double> states;
     public double reward;
 
-    public Replay(double distVertGap, double distHorGap, double yDistToNext, double r)
+    public Replay(double distVertGap, double distHorGap, double r)
     {
         states = new List<double>();
 
         states.Add(distVertGap);
         states.Add(distHorGap);
-      //  states.Add(yDistToNext);
         reward = r;
     }
 }
 
 public class Brain : MonoBehaviour
 {
-    // Colliders 
-    public GameObject top;
-    public GameObject bottom;
+    // Game 
     public Text scoreText;
-
     public float timeScale = 1.0f;
 
     // Bird
@@ -45,9 +41,10 @@ public class Brain : MonoBehaviour
     private Rigidbody2D rb;
     private Animator anim;
     private Vector2 startPosition;
+    private int lastScore = 0;
+
     private float halfScreen = 3.4f;
     private float maxDistanceToColumn = 10f;
-    private int lastScore = 0;
 
     // ANN Brain
     private ANN ann;
@@ -95,28 +92,20 @@ public class Brain : MonoBehaviour
         List<double> qs;
 
         GameObject currColumn = GameController.instance.GetCurrentColumn();
-        GameObject nextColumn = GameController.instance.GetNextColumn();
         if (!currColumn) return;
-
-        currColumn.GetComponentInChildren<SpriteRenderer>().color = Color.green;
-        nextColumn.GetComponentInChildren<SpriteRenderer>().color = Color.red;
 
         float yDist = currColumn.transform.position.y - transform.position.y;
         float xDist = currColumn.transform.position.x - transform.position.x;
-        float yDistToNext = nextColumn.transform.position.y - currColumn.transform.position.y;
 
         Debug.Log("Y distance: " + yDist);
         Debug.Log("X distance: " + xDist);
-        Debug.Log("Y difference: " + yDistToNext);
 
-        //Normalize
+        //Normalize and round
         float vertDist = 1 - (float)System.Math.Round((Map(-1.0f, 1.0f, -halfScreen, halfScreen, yDist)), 2);
         float horDist = 1 - (float)System.Math.Round((Map(0.0f, 1.0f, 0.0f, maxDistanceToColumn, xDist)), 2);
-        float vertDistToNext = 1 - (float)System.Math.Round((Map(-1.0f, 1.0f, -halfScreen, halfScreen, yDistToNext)), 2);
 
         states.Add(vertDist);
         states.Add(horDist);
-      //  states.Add(vertDistToNext);
 
         qs = SoftMax(ann.CalcOutput(states));
         double maxQ = qs.Max();
@@ -140,13 +129,12 @@ public class Brain : MonoBehaviour
 
         if (lastScore < score)
         {
-            //reward += 0.01f;
             scoreText.text = "Score: " + score;
             lastScore = score;
         }
 
 
-        Replay lastMemory = new Replay(vertDist, horDist, vertDistToNext, reward);
+        Replay lastMemory = new Replay(vertDist, horDist, reward);
 
         if (replayMemory.Count > maxMemoryCapacity)
             replayMemory.RemoveAt(0);
@@ -195,8 +183,6 @@ public class Brain : MonoBehaviour
 
     }
 
-
-    //if not dead flap
     private void Flap()
     {
         anim.SetTrigger("Flap");
@@ -241,6 +227,7 @@ public class Brain : MonoBehaviour
         return result;
     }
 
+    // Map values between newfrom and newto
     float Map(float newfrom, float newto, float origfrom, float origto, float value)
     {
         if (value <= origfrom)
@@ -250,12 +237,7 @@ public class Brain : MonoBehaviour
         return (newto - newfrom) * ((value - origfrom) / (origto - origfrom)) + newfrom;
     }
 
-    float Round(float x)
-    {
-        return (float)System.Math.Round(x, System.MidpointRounding.AwayFromZero) / 2.0f;
-    }
-
-
+    // STATS
     GUIStyle gUIStyle = new GUIStyle();
     private void OnGUI()
     {
