@@ -329,7 +329,7 @@ MonoBehaviour:
   populationSize: 100
   mutate: 0
   currentPopulationScore: 0
-  timeScale: 2
+  timeScale: 7
 --- !u!4 &828364442
 Transform:
   m_ObjectHideFlags: 0

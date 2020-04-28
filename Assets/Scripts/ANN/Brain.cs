@@ -75,7 +75,10 @@ public class Brain : MonoBehaviour
 
         ann = new ANN(2, 2, 1, 6, 0.9f);
     }
-
+    private void Update()
+    {
+        if (Input.GetKeyDown(KeyCode.F)) Flap();
+    }
     private void FixedUpdate()
     {
         // If brain wasnt inicialized
@@ -116,6 +119,7 @@ public class Brain : MonoBehaviour
                 maxQIndex = Random.Range(0, 2);
         }
 
+        // Action
         if (maxQIndex == 0) Flap();
 
         if (isDead) reward = -1f;
