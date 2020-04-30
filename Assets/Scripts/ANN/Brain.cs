@@ -98,7 +98,7 @@ public class Brain : MonoBehaviour
         float xDist = currColumn.transform.position.x - transform.position.x;
 
         // Normalize and round
-        float vertDist = 1 - (float)System.Math.Round((Map(-1.0f, 1.0f, -halfScreen, halfScreen, yDist)), 2);
+        float vertDist = (float)System.Math.Round((Map(-1.0f, 1.0f, -halfScreen, halfScreen, yDist)), 2);
         float horDist = 1 - (float)System.Math.Round((Map(0.0f, 1.0f, 0.0f, maxDistanceToColumn, xDist)), 2);
 
         // Add values to the states

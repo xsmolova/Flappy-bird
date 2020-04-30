@@ -20,11 +20,14 @@ public class PopulationManager : MonoBehaviour
     public static float elapsed = 0;
     public float timeScale = 1f;
 
+    public bool saveStatistics = true;
     public bool saveWeightsToFile = false;
 
     List<GameObject> population = new List<GameObject>();
     int generation = 1;
     int deadBirds = 0;
+    List<string> collectedStatistics = new List<string>();
+    StreamWriter tdf;
 
     GUIStyle guiStyle = new GUIStyle();
     void OnGUI()
@@ -67,6 +70,9 @@ public class PopulationManager : MonoBehaviour
         currentPopulationScore = 0;
         ShowPopulationScore();
 
+        string path = Application.dataPath + "/statistics.csv";
+        tdf = File.CreateText(path);
+
         Time.timeScale = timeScale;
     }
 
@@ -75,7 +81,7 @@ public class PopulationManager : MonoBehaviour
     {
         elapsed += Time.deltaTime;
 
-        if (saveWeightsToFile) SaveWeightsToFile();
+        if (saveWeightsToFile) { saveWeightsToFile = false; SaveWeightsToFile(); }
     }
 
 
@@ -95,6 +101,9 @@ public class PopulationManager : MonoBehaviour
 
     public void BreedNewPopulation()
     {
+        if (saveStatistics) WriteStatistics();
+        if (generation == 100) UnityEditor.EditorApplication.isPlaying = false;
+
         List<GameObject> sortedList = population.OrderBy(o => (o.GetComponent<Brain>().score * 10 + o.GetComponent<Brain>().timeAlive)).ToList();
 
         population.Clear();
@@ -146,17 +155,49 @@ public class PopulationManager : MonoBehaviour
     }
 
 
-    private Brain GetBestBird() {
+    private Brain GetBestBird()
+    {
         List<GameObject> sortedList = population.OrderBy(o => (o.GetComponent<Brain>().score)).ToList();
         return sortedList[sortedList.Count - 1].GetComponent<Brain>();
     }
 
-    private void SaveWeightsToFile() {
+
+    // Save statistics
+    private void WriteStatistics()
+    {
+        string statistics = generation + "," + currentPopulationScore;
+        collectedStatistics.Add(statistics);
+    }
+
+    void OnApplicationQuit()
+    {
+        foreach (string sd in collectedStatistics)
+        {
+            tdf.WriteLine(sd);
+        }
+        tdf.Close();
+    }
+
+    // Save weights of best bird
+    private void SaveWeightsToFile()
+    {
         string path = Application.dataPath + "/weights.txt";
         StreamWriter tdf = File.CreateText(path);
 
         Brain bird = GetBestBird();
         tdf.WriteLine(bird.ann.PrintWeights());
         tdf.Close();
+    }
+
+    void LoadWeightsFromFile(ANN ann)
+    {
+        string path = Application.dataPath + "/weights.txt";
+        StreamReader wf = File.OpenText(path);
+
+        if (File.Exists(path))
+        {
+            string line = wf.ReadLine();
+            ann.LoadWeights(line);
+        }
     }
 }
