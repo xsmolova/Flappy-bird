@@ -327,9 +327,11 @@ MonoBehaviour:
     type: 3}
   startingPos: {x: 0, y: 0}
   populationSize: 100
-  mutate: 0
+  mutate: 1
+  mutateRate: 5
   currentPopulationScore: 0
-  timeScale: 7
+  timeScale: 10
+  saveWeightsToFile: 0
 --- !u!4 &828364442
 Transform:
   m_ObjectHideFlags: 0

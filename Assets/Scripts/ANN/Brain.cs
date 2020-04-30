@@ -37,7 +37,6 @@ public class Brain : MonoBehaviour
 
     private Rigidbody2D rb;
     private Animator anim;
-    private Vector2 startPosition;
     public bool deadInPopulation = false;
 
     private float halfScreen = 3.4f;
@@ -135,7 +134,7 @@ public class Brain : MonoBehaviour
 
         if (isDead)
         {
-            TrainFromMemories();
+            //TrainFromMemories();
 
             if (timeAlive > maxFlightTime)
                 maxFlightTime = timeAlive;

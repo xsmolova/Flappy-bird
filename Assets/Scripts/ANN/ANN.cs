@@ -45,7 +45,7 @@ public class ANN
         return outputValues;
     }
 
-    //
+    
     public List<double> CalcOutput(List<double> inputValues, List<double> desiredOutput)
     {
         List<double> inputs;
@@ -185,15 +185,24 @@ public class ANN
     {
         for (int i = 0; i < numHidden + 1; i++)
         {
+            int point = Random.Range(0, layers[i].numNeurons);
+
             for (int j = 0; j < layers[i].numNeurons; j++)
             {
-                // 50% chance to take bias from each parent
-                layers[i].neurons[j].bias = Random.Range(0, 10) < 5 ? a1.layers[i].neurons[j].bias : a2.layers[i].neurons[j].bias;
+
+                if (j <= point) layers[i].neurons[j].bias = a1.layers[i].neurons[j].bias;
+                else layers[i].neurons[j].bias = a2.layers[i].neurons[j].bias;
+
+                //// 50% chance to take bias from each parent
+                // layers[i].neurons[j].bias = Random.Range(0, 10) < 5 ? a1.layers[i].neurons[j].bias : a2.layers[i].neurons[j].bias;
 
                 for (int k = 0; k < layers[i].neurons[j].numInputs; k++)
                 {
-                    // 50% chance to take weight from each parent
-                    layers[i].neurons[j].weights[k] = Random.Range(0, 10) < 5 ? a1.layers[i].neurons[j].weights[k] : a2.layers[i].neurons[j].weights[k];
+                    //// 50% chance to take weight from each parent
+                    //layers[i].neurons[j].weights[k] = Random.Range(0, 10) < 5 ? a1.layers[i].neurons[j].weights[k] : a2.layers[i].neurons[j].weights[k];
+
+                    if (j <= point) layers[i].neurons[j].weights[k] = a1.layers[i].neurons[j].weights[k];
+                    else layers[i].neurons[j].weights[k] = a2.layers[i].neurons[j].weights[k];
                 }
             }
         }
@@ -202,9 +211,12 @@ public class ANN
 
     public void Mutate()
     {
-       
-      
-        //genes[Random.Range(0, dnaLength)] = Random.Range(-maxValues, maxValues);
+        int mutationLayer = Random.Range(0, numHidden + 1);
+        int neuronToMutate = Random.Range(0, layers[mutationLayer].numNeurons);
+
+        layers[mutationLayer].neurons[neuronToMutate].SetRandomBias();
+        layers[mutationLayer].neurons[neuronToMutate].SetRandomWeights();
+
     }
 
     public string PrintWeights()

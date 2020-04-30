@@ -15,17 +15,22 @@ public class Neuron
 
     public Neuron(int nInputs)
     {
-        float weightRange = (float)2.4 / (float)nInputs;
-        bias = UnityEngine.Random.Range(-weightRange, weightRange);
         numInputs = nInputs;
 
-        for (int i = 0; i < nInputs; i++)
-            weights.Add(UnityEngine.Random.Range(-weightRange, weightRange));
+        SetRandomBias();
+        SetRandomWeights();
     }
 
     public void SetRandomBias()
     {
         float weightRange = (float)2.4 / (float)numInputs;
         bias = UnityEngine.Random.Range(-weightRange, weightRange);
+    }
+
+    public void SetRandomWeights()
+    {
+        float weightRange = (float)2.4 / (float)numInputs;
+        for (int i = 0; i < numInputs; i++)
+            weights.Add(UnityEngine.Random.Range(-weightRange, weightRange));
     }
 }

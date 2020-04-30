@@ -15,6 +15,8 @@ public class GameController : MonoBehaviour
 
     void Awake()
     {
+        System.Threading.Thread.CurrentThread.CurrentCulture = new System.Globalization.CultureInfo("en-US");
+
         if (instance == null)
         {
             instance = this;

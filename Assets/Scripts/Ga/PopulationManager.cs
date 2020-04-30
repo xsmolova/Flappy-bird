@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using System.Linq;
+using System.IO;
 
 public class PopulationManager : MonoBehaviour
 {
@@ -13,10 +14,13 @@ public class PopulationManager : MonoBehaviour
     public Vector2 startingPos = new Vector2(0, 0);
     public int populationSize = 10;
     public bool mutate = false;
+    public int mutateRate = 1;
     public int currentPopulationScore = 0;
 
     public static float elapsed = 0;
     public float timeScale = 1f;
+
+    public bool saveWeightsToFile = false;
 
     List<GameObject> population = new List<GameObject>();
     int generation = 1;
@@ -70,24 +74,22 @@ public class PopulationManager : MonoBehaviour
     void Update()
     {
         elapsed += Time.deltaTime;
+
+        if (saveWeightsToFile) SaveWeightsToFile();
     }
 
 
     private GameObject Breed(GameObject parent1, GameObject parent2)
     {
         GameObject offspring = Instantiate(botPrefab, startingPos, Quaternion.identity);
-        Brain b = offspring.GetComponent<Brain>();
+        Brain brain = offspring.GetComponent<Brain>();
 
-        if (mutate && Random.Range(0, 100) == 1) //mutate 1 in 100
-        {
-            b.Init();
-            b.ann.Mutate();
-        }
-        else
-        {
-            b.Init();
-            b.ann.Combine(parent1.GetComponent<Brain>().ann, parent2.GetComponent<Brain>().ann);
-        }
+        brain.Init();
+        brain.ann.Combine(parent1.GetComponent<Brain>().ann, parent2.GetComponent<Brain>().ann);
+
+        if (mutate && Random.Range(0, 100) < mutateRate) //mutate in 1%
+            brain.ann.Mutate();
+
         return offspring;
     }
 
@@ -97,20 +99,13 @@ public class PopulationManager : MonoBehaviour
 
         population.Clear();
 
-        // Best 25% of population
-        for (int i = sortedList.Count - 1; i > (int)(3 * sortedList.Count / 4.0f) - 1; i--)
+        // Best 20% of population
+        for (int i = sortedList.Count - 1; i > (int)(4 * sortedList.Count / 5.0f) - 1; i--)
         {
-            // Best two -> in the new population + breed
-            if (i == sortedList.Count - 1)
-            {
-                population.Add(Breed(sortedList[i], sortedList[i]));
-                population.Add(Breed(sortedList[i - 1], sortedList[i - 1]));
-                population.Add(Breed(sortedList[i], sortedList[i - 1]));
-                population.Add(Breed(sortedList[i - 1], sortedList[i]));
+            // Make a exact copy of best 20% of birds
+            population.Add(Breed(sortedList[i], sortedList[i]));
 
-                continue;
-            }
-
+            // Breed bird with next best one to produce 4 offsprings
             population.Add(Breed(sortedList[i], sortedList[i - 1]));
             population.Add(Breed(sortedList[i - 1], sortedList[i]));
             population.Add(Breed(sortedList[i], sortedList[i - 1]));
@@ -122,6 +117,7 @@ public class PopulationManager : MonoBehaviour
         {
             Destroy(sortedList[i]);
         }
+
         Debug.Log("new generation with population = " + population.Count);
         generation++;
 
@@ -147,5 +143,20 @@ public class PopulationManager : MonoBehaviour
     public void ShowPopulationScore()
     {
         scoreText.text = "Score: " + currentPopulationScore;
+    }
+
+
+    private Brain GetBestBird() {
+        List<GameObject> sortedList = population.OrderBy(o => (o.GetComponent<Brain>().score)).ToList();
+        return sortedList[sortedList.Count - 1].GetComponent<Brain>();
+    }
+
+    private void SaveWeightsToFile() {
+        string path = Application.dataPath + "/weights.txt";
+        StreamWriter tdf = File.CreateText(path);
+
+        Brain bird = GetBestBird();
+        tdf.WriteLine(bird.ann.PrintWeights());
+        tdf.Close();
     }
 }
