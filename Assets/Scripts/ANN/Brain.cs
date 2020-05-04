@@ -117,9 +117,11 @@ public class Brain : MonoBehaviour
         // Add a new memory
         Replay lastMemory = new Replay(vertDist, horDist, reward);
 
+        replayMemory.Add(lastMemory);
+
         if (replayMemory.Count > maxMemoryCapacity)
             replayMemory.RemoveAt(0);
-
+        
 
         if (isDead)
         {

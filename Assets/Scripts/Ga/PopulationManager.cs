@@ -175,9 +175,7 @@ public class PopulationManager : MonoBehaviour
         for (int i = sortedList.Count - 1; i > (int)(4 * sortedList.Count / 5.0f) - 1; i--)
         {
             // Elitism - Make a copy of best 20% of birds
-            mutate = false;
             population.Add(Breed(sortedList[i], sortedList[i]));
-            mutate = true;
 
             // Breed bird with next best one to produce 2 offsprings
             population.Add(Breed(sortedList[i], sortedList[i - 1]));

@@ -331,10 +331,10 @@ MonoBehaviour:
   mutate: 1
   mutateRate: 5
   currentPopulationScore: 0
-  qLearning: 1
-  isExploring: 1
+  qLearning: 0
+  isExploring: 0
   stopExploringAt: 30
-  exploreRate: 10
+  exploreRate: 20
   maxExploreRate: 100
   minExploreRate: 1
   exploreDecay: 0.0001
