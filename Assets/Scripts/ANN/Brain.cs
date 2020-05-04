@@ -6,10 +6,8 @@ using System.Linq;
 
 
 // States:
-// distance to top collider
-// distance to bottom collider
-// vertical distance to columns (gap)
-// horizontal distance to (gap)
+// - vertical distance to columns (gap)
+// - horizontal distance to (gap)
 
 public class Replay
 {
@@ -32,7 +30,6 @@ public class Brain : MonoBehaviour
     public float upForce = 250f;
     public int score = 0;
     public bool isDead = false;
-    public bool isExploring = false;
     public float timeAlive = 0;
 
     private Rigidbody2D rb;
@@ -45,15 +42,11 @@ public class Brain : MonoBehaviour
     // ANN Brain
     public ANN ann = null;
 
-    float reward = 0.0f;
+    // Memory
     List<Replay> replayMemory = new List<Replay>();
     int maxMemoryCapacity = 1000;
-
+    float reward = 0.0f;
     float discount = 0.99f;
-    public float exploreRate = 100.0f;
-    float maxExploreRate = 100.0f;
-    float minExploreRate = 0.01f;
-    float exploreDecay = 0.0001f;
 
     // Stats
     public static int maxScore = 0;
@@ -74,17 +67,13 @@ public class Brain : MonoBehaviour
 
         ann = new ANN(2, 2, 1, 6, 0.9f);
     }
-    private void Update()
-    {
-        if (Input.GetKeyDown(KeyCode.F)) Flap();
-    }
+
     private void FixedUpdate()
     {
-        // If brain wasnt inicialized
+        // If brain wasn't inicialized return
         if (ann == null) return;
-
         if (deadInPopulation) return;
-        
+
         timeAlive += Time.deltaTime;
 
         List<double> states = new List<double>();
@@ -111,16 +100,17 @@ public class Brain : MonoBehaviour
         int maxQIndex = qs.ToList().IndexOf(maxQ);
 
         // Explore
-        if (isExploring)
+        if (PopulationManager.instance.isExploring)
         {
-            exploreRate = Mathf.Clamp(exploreRate - exploreDecay, minExploreRate, maxExploreRate);
-            if (Random.Range(0, 100) < exploreRate)
+            PopulationManager.instance.exploreRate = Mathf.Clamp(PopulationManager.instance.exploreRate - PopulationManager.instance.exploreDecay, PopulationManager.instance.minExploreRate, PopulationManager.instance.maxExploreRate);
+            if (Random.Range(0, 100) < PopulationManager.instance.exploreRate)
                 maxQIndex = Random.Range(0, 2);
         }
 
         // Action
         if (maxQIndex == 0) Flap();
 
+        // Reward
         if (isDead) reward = -1f;
         else reward = 0.1f;
 
@@ -130,11 +120,11 @@ public class Brain : MonoBehaviour
         if (replayMemory.Count > maxMemoryCapacity)
             replayMemory.RemoveAt(0);
 
-        replayMemory.Add(lastMemory);
 
         if (isDead)
         {
-            //TrainFromMemories();
+            if (PopulationManager.instance.qLearning)
+                TrainFromMemories();
 
             if (timeAlive > maxFlightTime)
                 maxFlightTime = timeAlive;
@@ -155,6 +145,7 @@ public class Brain : MonoBehaviour
 
     }
 
+    // Q-learning itself
     private void TrainFromMemories()
     {
         for (int i = replayMemory.Count - 1; i >= 0; i--)
@@ -174,7 +165,7 @@ public class Brain : MonoBehaviour
             {
                 outputsNew = SoftMax(ann.CalcOutput(replayMemory[i + 1].states));
                 double maxQ = outputsNew.Max();
-                //Bellmans equation
+                //Bellman's equation
                 feedback = replayMemory[i].reward + discount * maxQ;
             }
 
@@ -198,7 +189,7 @@ public class Brain : MonoBehaviour
     }
 
 
-    //normalize 0-1, all of the values add up to 1 => percentage system
+    // Normalize 0-1, all of the values add up to 1 => percentage system
     List<double> SoftMax(List<double> oSums)
     {
         double max = oSums.Max();

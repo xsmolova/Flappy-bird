@@ -10,25 +10,44 @@ public class PopulationManager : MonoBehaviour
     public static PopulationManager instance;
 
     public Text scoreText;
+
     public GameObject botPrefab;
     public Vector2 startingPos = new Vector2(0, 0);
+
+    // Genetic algorithm
     public int populationSize = 10;
+    public int endAtGeneration;
     public bool mutate = false;
-    public int mutateRate = 1;
+    public float mutateRate = 1f;
+
     public int currentPopulationScore = 0;
 
-    public static float elapsed = 0;
+    // Reinforcement learning
+    public bool qLearning = false;
+    public bool isExploring = false;
+    public int stopExploringAt = 30;
+    public float exploreRate = 2f;
+    public float maxExploreRate = 100.0f;
+    public float minExploreRate = 0f;
+    public float exploreDecay = 0.0001f;
+
     public float timeScale = 1f;
 
     public bool saveStatistics = true;
     public bool saveWeightsToFile = false;
 
+    // Population
     List<GameObject> population = new List<GameObject>();
     int generation = 1;
+    float elapsed = 0;
     int deadBirds = 0;
+
+    // Statistics
     List<string> collectedStatistics = new List<string>();
     StreamWriter tdf;
 
+
+    // Statistics on the screen
     GUIStyle guiStyle = new GUIStyle();
     void OnGUI()
     {
@@ -56,15 +75,17 @@ public class PopulationManager : MonoBehaviour
         }
     }
 
-    // Start is called before the first frame update
+
     void Start()
     {
+        // Instantiate a population 
         for (int i = 0; i < populationSize; i++)
         {
             GameObject b = Instantiate(botPrefab, startingPos, Quaternion.identity);
             b.GetComponent<Brain>().Init();
             population.Add(b);
         }
+
         deadBirds = 0;
 
         currentPopulationScore = 0;
@@ -76,7 +97,7 @@ public class PopulationManager : MonoBehaviour
         Time.timeScale = timeScale;
     }
 
-    // Update is called once per frame
+
     void Update()
     {
         elapsed += Time.deltaTime;
@@ -93,35 +114,80 @@ public class PopulationManager : MonoBehaviour
         brain.Init();
         brain.ann.Combine(parent1.GetComponent<Brain>().ann, parent2.GetComponent<Brain>().ann);
 
-        if (mutate && Random.Range(0, 100) < mutateRate) //mutate in 1%
+        // Mutate
+        if (mutate && Random.Range(0, 100) < mutateRate)
             brain.ann.Mutate();
 
         return offspring;
     }
 
+
+    // Roulette selection method
+    int SelectParentWithRoulette(List<GameObject> sortedList)
+    {
+        float sum = 0;
+        for (int i = 0; i < sortedList.Count; i++)
+        {
+            Brain b = sortedList[i].GetComponent<Brain>();
+            float fitness = b.score * 10 + b.timeAlive;
+
+            sum += fitness;
+        }
+
+        float rulette = Random.Range(0, sum);
+
+        sum = 0;
+        for (int i = 0; i < sortedList.Count; i++)
+        {
+            Brain b = sortedList[i].GetComponent<Brain>();
+            float fitness = b.score * 10 + b.timeAlive;
+
+            sum += fitness;
+            if (sum > rulette) return i;
+        }
+        return 0;
+    }
+
+
     public void BreedNewPopulation()
     {
         if (saveStatistics) WriteStatistics();
-        if (generation == 100) UnityEditor.EditorApplication.isPlaying = false;
+        if (generation == endAtGeneration) UnityEditor.EditorApplication.isPlaying = false;
+        if (generation == stopExploringAt) isExploring = false;
 
         List<GameObject> sortedList = population.OrderBy(o => (o.GetComponent<Brain>().score * 10 + o.GetComponent<Brain>().timeAlive)).ToList();
 
         population.Clear();
 
+        //// Roulette - 80% of population, 20% elitism
+        //for (int i = 0; i < (int)(4 * sortedList.Count / 5.0f); i++)
+        //{
+        //    int parent1Index = SelectParentWithRoulette(sortedList);
+        //    int parent2Index = SelectParentWithRoulette(sortedList);
+        //
+        //    population.Add(Breed(sortedList[parent1Index], sortedList[parent2Index]));
+        //}
+        
+
         // Best 20% of population
         for (int i = sortedList.Count - 1; i > (int)(4 * sortedList.Count / 5.0f) - 1; i--)
         {
-            // Make a exact copy of best 20% of birds
+            // Elitism - Make a copy of best 20% of birds
+            mutate = false;
             population.Add(Breed(sortedList[i], sortedList[i]));
+            mutate = true;
 
-            // Breed bird with next best one to produce 4 offsprings
+            // Breed bird with next best one to produce 2 offsprings
             population.Add(Breed(sortedList[i], sortedList[i - 1]));
             population.Add(Breed(sortedList[i - 1], sortedList[i]));
-            population.Add(Breed(sortedList[i], sortedList[i - 1]));
-            population.Add(Breed(sortedList[i - 1], sortedList[i]));
+        
+            // Breed bird with random bird from best 20%
+            int j = (int)Random.Range((int)(4 * sortedList.Count / 5.0f), sortedList.Count);
+            population.Add(Breed(sortedList[i], sortedList[j]));
+            population.Add(Breed(sortedList[j], sortedList[i]));
         }
 
-        //destroy all parents and previous population
+        // Destroy all parents and previous population
         for (int i = 0; i < sortedList.Count; i++)
         {
             Destroy(sortedList[i]);
@@ -142,8 +208,7 @@ public class PopulationManager : MonoBehaviour
 
         if (deadBirds == population.Count)
         {
-            Debug.Log("all birds died");
-            GameController.instance.AllBirdsDied();
+            GameController.instance.AllBirdsDied();            
             BreedNewPopulation();
             GameController.instance.ResetGame();
         }
@@ -178,7 +243,7 @@ public class PopulationManager : MonoBehaviour
         tdf.Close();
     }
 
-    // Save weights of best bird
+    // Save weights
     private void SaveWeightsToFile()
     {
         string path = Application.dataPath + "/weights.txt";

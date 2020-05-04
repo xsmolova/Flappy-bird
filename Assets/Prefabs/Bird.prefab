@@ -52,7 +52,8 @@ MonoBehaviour:
   isDead: 0
   isExploring: 0
   timeAlive: 0
-  exploreRate: 0.01
+  deadInPopulation: 0
+  exploreRate: 1
 --- !u!212 &1025451251404761595
 SpriteRenderer:
   m_ObjectHideFlags: 0

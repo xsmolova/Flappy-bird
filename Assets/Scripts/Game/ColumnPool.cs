@@ -18,13 +18,13 @@ public class ColumnPool : MonoBehaviour
     private int posColumnIndex = 0;
     private bool isFirst = true;
 
-    // Start is called before the first frame update
+   
     void Start()
     {
         SpawnColumns();
     }
 
-    // Update is called once per frame
+    
     void FixedUpdate()
     {
         timeSinceLastSpawn += Time.deltaTime;
@@ -37,18 +37,8 @@ public class ColumnPool : MonoBehaviour
             columns[posColumnIndex].tag = "unscored";
             posColumnIndex++;
 
-            // get first two
             if (isFirst) { 
                 isFirst = false;
-
-             //   timeSinceLastSpawn = -spawnRate;
-             // 
-             //   float predictedPointX = spawnXPosition + (-GameController.instance.scrollSpeed) * spawnRate;
-             //   float spawnY = Random.Range(columnMin, columnMax);
-             // 
-             //   columns[posColumnIndex].transform.position = new Vector2(predictedPointX, spawnY);
-             //   columns[posColumnIndex].tag = "unscored";
-             //   posColumnIndex++;
             }
 
             if (posColumnIndex >= columnPoolSize) posColumnIndex = 0;
@@ -87,9 +77,4 @@ public class ColumnPool : MonoBehaviour
         return columns[currentColumnIndex];
     }
 
-   // public GameObject GetNextColumn()
-   // {
-   //     if(currentColumnIndex + 1 == columnPoolSize) return columns[0];
-   //     else return columns[currentColumnIndex + 1];
-   // }
 }

@@ -55,10 +55,4 @@ public class GameController : MonoBehaviour
         return columnPool.GetCurrentColumn();
     }
 
-   // public GameObject GetNextColumn()
-   // {
-   //     return columnPool.GetNextColumn();
-   // }
-
-
 }

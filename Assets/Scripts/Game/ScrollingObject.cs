@@ -7,7 +7,6 @@ public class ScrollingObject : MonoBehaviour
     private Rigidbody2D rb;
     private Vector2 startingPosition;
 
-    // Start is called before the first frame update
     void Start()
     {
         startingPosition = new Vector2(transform.position.x, transform.position.y);
@@ -15,7 +14,6 @@ public class ScrollingObject : MonoBehaviour
         rb.velocity = new Vector2(GameController.instance.scrollSpeed,0);
     }
 
-    // Update is called once per frame
     void Update()
     {
         if (GameController.instance.gameOver)

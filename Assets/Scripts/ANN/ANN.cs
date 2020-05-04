@@ -40,62 +40,14 @@ public class ANN
     public List<double> Train(List<double> inputValues, List<double> desiredOutput)
     {
         List<double> outputValues = new List<double>();
-        outputValues = CalcOutput(inputValues, desiredOutput);
+        outputValues = CalcOutput(inputValues);
         UpdateWeights(outputValues, desiredOutput);
         return outputValues;
     }
-
-    
-    public List<double> CalcOutput(List<double> inputValues, List<double> desiredOutput)
-    {
-        List<double> inputs;
-        List<double> outputValues = new List<double>();
-        int currentInput = 0;
-
-        if (inputValues.Count != numInputs)
-        {
-            Debug.Log("ERROR: Number of Inputs must be " + numInputs);
-            return outputValues;
-        }
-
-        inputs = new List<double>(inputValues);
-        for (int i = 0; i < numHidden + 1; i++)
-        {
-            if (i > 0)
-            {
-                inputs = new List<double>(outputValues);
-            }
-            outputValues.Clear();
-
-            for (int j = 0; j < layers[i].numNeurons; j++)
-            {
-                double N = 0;
-                layers[i].neurons[j].inputs.Clear();
-
-                for (int k = 0; k < layers[i].neurons[j].numInputs; k++)
-                {
-                    layers[i].neurons[j].inputs.Add(inputs[currentInput]);
-                    N += layers[i].neurons[j].weights[k] * inputs[currentInput];
-                    currentInput++;
-                }
-
-                N -= layers[i].neurons[j].bias;
-
-                if (i == numHidden)
-                    layers[i].neurons[j].output = ActivationFunctionOutput(N);
-                else
-                    layers[i].neurons[j].output = ActivationFunction(N);
-
-                outputValues.Add(layers[i].neurons[j].output);
-                currentInput = 0;
-            }
-        }
-        return outputValues;
-    }
-
+   
     public List<double> CalcOutput(List<double> inputValues)
     {
-        List<double> inputs = new List<double>();
+        List<double> inputs;
         List<double> outputValues = new List<double>();
         int currentInput = 0;
 
@@ -181,6 +133,10 @@ public class ANN
 
     }
 
+    // Combine neural network of two birds
+    // - get random neuron
+    // - everything up to including this neuron -> get weights and bias values from one parent
+    // - get everything else from the second parent
     public void Combine(ANN a1, ANN a2)
     {
         for (int i = 0; i < numHidden + 1; i++)
@@ -193,14 +149,8 @@ public class ANN
                 if (j <= point) layers[i].neurons[j].bias = a1.layers[i].neurons[j].bias;
                 else layers[i].neurons[j].bias = a2.layers[i].neurons[j].bias;
 
-                //// 50% chance to take bias from each parent
-                // layers[i].neurons[j].bias = Random.Range(0, 10) < 5 ? a1.layers[i].neurons[j].bias : a2.layers[i].neurons[j].bias;
-
                 for (int k = 0; k < layers[i].neurons[j].numInputs; k++)
                 {
-                    //// 50% chance to take weight from each parent
-                    //layers[i].neurons[j].weights[k] = Random.Range(0, 10) < 5 ? a1.layers[i].neurons[j].weights[k] : a2.layers[i].neurons[j].weights[k];
-
                     if (j <= point) layers[i].neurons[j].weights[k] = a1.layers[i].neurons[j].weights[k];
                     else layers[i].neurons[j].weights[k] = a2.layers[i].neurons[j].weights[k];
                 }
@@ -208,14 +158,14 @@ public class ANN
         }
     }
 
-
+    // Mutate random neuron's bias
     public void Mutate()
     {
         int mutationLayer = Random.Range(0, numHidden + 1);
         int neuronToMutate = Random.Range(0, layers[mutationLayer].numNeurons);
 
         layers[mutationLayer].neurons[neuronToMutate].SetRandomBias();
-        layers[mutationLayer].neurons[neuronToMutate].SetRandomWeights();
+        //layers[mutationLayer].neurons[neuronToMutate].SetRandomWeights();
 
     }
 

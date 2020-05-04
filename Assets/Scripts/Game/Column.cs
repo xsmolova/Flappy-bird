@@ -24,12 +24,12 @@ public class Column : MonoBehaviour
                 PopulationManager.instance.ShowPopulationScore();
             }
 
-            //tag column
-
+            // Tag column as scored
             if (gameObject.tag != "scored")
             {
                 gameObject.tag = "scored";
 
+                // Move to next column
                 if (cp.currentColumnIndex + 1 >= cp.columnPoolSize) cp.currentColumnIndex = 0;
                 else cp.currentColumnIndex++;
             }
