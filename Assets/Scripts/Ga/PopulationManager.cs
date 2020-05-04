@@ -35,6 +35,7 @@ public class PopulationManager : MonoBehaviour
 
     public bool saveStatistics = true;
     public bool saveWeightsToFile = false;
+    public bool loadWeightsFromFile = false;
 
     // Population
     List<GameObject> population = new List<GameObject>();
@@ -83,6 +84,7 @@ public class PopulationManager : MonoBehaviour
         {
             GameObject b = Instantiate(botPrefab, startingPos, Quaternion.identity);
             b.GetComponent<Brain>().Init();
+            if (loadWeightsFromFile) LoadWeightsFromFile(b.GetComponent<Brain>().ann);
             population.Add(b);
         }
 

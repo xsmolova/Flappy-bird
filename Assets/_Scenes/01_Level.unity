@@ -327,20 +327,21 @@ MonoBehaviour:
     type: 3}
   startingPos: {x: 0, y: 0}
   populationSize: 100
-  endAtGeneration: 50
+  endAtGeneration: 500
   mutate: 1
   mutateRate: 5
   currentPopulationScore: 0
-  qLearning: 0
-  isExploring: 0
+  qLearning: 1
+  isExploring: 1
   stopExploringAt: 30
-  exploreRate: 20
+  exploreRate: 10
   maxExploreRate: 100
-  minExploreRate: 0
+  minExploreRate: 1
   exploreDecay: 0.0001
-  timeScale: 3
+  timeScale: 10
   saveStatistics: 1
   saveWeightsToFile: 0
+  loadWeightsFromFile: 0
 --- !u!4 &828364442
 Transform:
   m_ObjectHideFlags: 0
